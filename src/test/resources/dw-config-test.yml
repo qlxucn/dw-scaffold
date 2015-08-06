@@ -1,0 +1,68 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8007
+#    - type: https
+#      port: 8107
+#      keyStorePath: dropwizard-engine/src/main/asm/conf/_.adscreendirect.com.20170624.keystore
+#      keyStorePassword: u~JLV2'Ve-8m~D3
+#      keyStoreType: JKS
+#      validateCerts: false
+#      inputBufferSize: 128KiB
+  adminConnectors:
+    - type: http
+      port: 8207
+#    - type: https
+#      port: 8307
+#      keyStorePath: dropwizard-engine/src/main/asm/conf/_.adscreendirect.com.20170624.keystore
+#      keyStorePassword: u~JLV2'Ve-8m~D3
+#      keyStoreType: JKS
+#      validateCerts: false
+
+assets:
+  overrides:
+    /content: src/main/webapp/
+
+
+executorThreadPoolSize: 1000
+
+redisHost: localhost
+redisPort: 6379
+redisDb: 2
+redisTimeout: 3000
+
+readRedisHost: localhost
+readRedisPort: 6379
+readRedisDb: 2
+readRedisTimeout: 3000
+
+flushRedisAllowed: true
+processingScriptRootDir: src/main/lua/
+defaultMaxAd: 5
+
+httpClientMaxTotalConnections: 200
+httpClientMaxConnectionsPerRoute: 10
+httpClientSoTimeout: 1000
+
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+  # Logger-specific levels.
+  loggers:
+    # Sets the level for 'com.example.app' to DEBUG.
+    example: DEBUG
+    org.hibernate.SQL: ALL
+  appenders:
+    - type: console
+
+
+# black list for websites which should not be intext hilghlighted
+# e.g. facebook.com,pinterest.com
+toolbarBlackList: facebook.com,pinterest.com,wikipedia.org
+
+enableStaticClientIp: true
+
+# Time unit is milliseconds
+findKeywordTimeout: 2000

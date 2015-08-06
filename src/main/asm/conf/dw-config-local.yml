@@ -1,0 +1,46 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8007
+#    - type: https
+#      port: 8107
+#      keyStorePath: dropwizard-engine/src/main/asm/conf/_.adscreendirect.com.20170624.keystore
+#      keyStorePassword: u~JLV2'Ve-8m~D3
+#      keyStoreType: JKS
+#      validateCerts: false
+#      inputBufferSize: 128KiB
+  adminConnectors:
+    - type: http
+      port: 8207
+#    - type: https
+#      port: 8307
+#      keyStorePath: dropwizard-engine/src/main/asm/conf/_.adscreendirect.com.20170624.keystore
+#      keyStorePassword: u~JLV2'Ve-8m~D3
+#      keyStoreType: JKS
+#      validateCerts: false
+  requestLog:
+    timeZone: UTC
+    appenders:
+      - type: file
+        currentLogFilename: /cf/logs/access.log
+        threshold: ALL
+        archive: true
+        archivedLogFilenamePattern: /cf/logs/access.%d.log.gz
+        archivedFileCount: 14
+
+assets:
+  overrides:
+    /content: src/main/webapp/
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+  # Logger-specific levels.
+  loggers:
+    # Sets the level for 'com.example.app' to DEBUG.
+    example: DEBUG
+    org.hibernate.SQL: ALL
+  appenders:
+    - type: console
+

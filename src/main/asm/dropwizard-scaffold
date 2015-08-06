@@ -1,0 +1,214 @@
+#!/bin/sh
+#
+# ------------------------------------------------------
+# Contextual Engine Application Startup Script for Unix
+# ------------------------------------------------------
+# chkconfig: 2345 70 32
+# description: This is the Contextual Engine Server Application
+
+# Set JVM heap size
+export heapSizeMegs=1014
+configHeapOverride=`grep -s ^contextual-engine-server.heapsize.override /f/contextual-engine/config.properties`
+if [ $? -eq 0 ]; then
+   heapSizeMegs=`echo $configHeapOverride | cut -d'=' -f2`
+   echo "Found heapsize override:  $heapSizeMegs"
+fi
+
+echo "Setting heapSize to:  ${heapSizeMegs}m"
+
+# Set the IP address for RMI (used by JMX) to the eht0 IP
+export RMI_ADDRESS=$( /sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}' )
+
+export JMX_PORT=9007
+export JPDA_ADDRESS=7007
+
+# Running as root is a bad idea.
+if [ "$EUID" = "0" ]; then
+   echo " *** Trying to run as root, exiting. ***"
+   exit
+else
+   echo "Running as non-root, continuing..."
+fi
+
+#
+# Check correct command line usage
+#
+usage()
+{
+   echo "Usage: $0 {start|stop|restart|status|debug}"
+   exit 1
+}
+
+[ $# -gt 0 ] || usage
+
+#
+# Get the action & configs
+#
+ACTION=$1
+
+#
+# Ensure the CENGINE_APP_INSTALLL var for this script points to the
+# home directory where Contextual Engine Application is is installed on your system.
+#
+
+CENGINE_APP_INSTALL=/f/contextual-engine
+
+export JAVA_HOME
+export CENGINE_APP_INSTALL
+
+#
+# Find a PID for the pid file
+#
+if [  -z "$CENGINE_APP_PID" ]
+then
+   CENGINE_APP_PID="$CENGINE_APP_INSTALL/CENGINE_APP.pid"
+fi
+
+#
+# Find a location for the CENGINE_APP console
+#
+if [  -z "$CENGINE_APP_CONSOLE" ]
+then
+ if [ -w /dev/console ]
+ then
+   CENGINE_APP_CONSOLE=/dev/console
+ else
+   CENGINE_APP_CONSOLE=/dev/tty
+ fi
+fi
+
+#
+# Are we running on Windows? Could be, with Cygwin/NT.
+#
+case "`uname`" in
+CYGWIN*) PATH_SEPARATOR=";";;
+*) PATH_SEPARATOR=":";;
+esac
+
+#
+# Save the current CLASSPATH
+#
+OLDCLASSPATH=$CLASSPATH
+
+#
+# Put the javac compiler in the classpath;
+#
+#CLASSPATH=$JAVA_HOME/lib/tools.jar
+
+#
+# Append old classpath to current classpath
+#
+if [ ! -z "$OLDCLASSPATH" ]; then
+   CLASSPATH=${CLASSPATH}:$OLDCLASSPATH
+fi
+
+#
+# This is how the Contextual Engine Application server will be started
+#
+RUN_CMD="java -server -Xms${heapSizeMegs}m -Xmx${heapSizeMegs}m -XX:MaxPermSize=256m \
+   -Djava.awt.headless=true -classpath $CLASSPATH \
+   $JAVA_OPTS \
+   -Dcom.findology.cache.readonly=false \
+   -Djava.net.preferIPv4Stack=true \
+   -XX:+UseConcMarkSweepGC \
+   -XX:SurvivorRatio=16 \
+   -XX:PermSize=128m \
+   -XX:MaxPermSize=256m \
+   -XX:NewSize=512m \
+   -Dcom.sun.management.jmxremote \
+   -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
+   -Dcom.sun.management.jmxremote.ssl=false \
+   -Dcom.sun.management.jmxremote.authenticate=true \
+   -Dcom.sun.management.jmxremote.password.file=conf/jmxremote.password \
+   -Dcom.sun.management.jmxremote.access.file=conf/jmxremote.access \
+   -Djava.rmi.server.hostname=${RMI_ADDRESS} "
+
+RUN_CLASS="-jar contextual-engine-shaded.jar server context-engine-config.yml "
+
+#
+# Do the action
+#
+case "$ACTION" in
+ start)
+       echo "Starting Contextual Engine Application: "
+
+       if [ -f $CENGINE_APP_PID ]
+       then
+           echo "Already Running!!"
+           exit 1
+       fi
+
+       echo "STARTED Contextual Engine Application `date`"
+
+       cd $CENGINE_APP_INSTALL
+       nohup sh -c "exec $RUN_CMD $RUN_CLASS 2>&1" >$CENGINE_APP_INSTALL/logs/CENGINE_APP.log &
+       echo $! > $CENGINE_APP_PID
+       echo "Contextual Engine Application running pid="`cat $CENGINE_APP_PID`
+       ;;
+
+ debug)
+       echo "Starting Contextual Engine Application With Debugging Enabled: "
+
+       if [ -f $CENGINE_APP_PID ]
+       then
+           echo "Already Running!!"
+           exit 1
+       fi
+
+       echo "STARTED Contextual Engine Application `date`"
+
+       cd $CENGINE_APP_INSTALL
+       EXTRA="-Xdebug -Xrunjdwp:transport=dt_socket,address=${JPDA_ADDRESS},server=y,suspend=n"
+       nohup sh -c "exec $RUN_CMD $EXTRA $RUN_CLASS 2>&1" >$CENGINE_APP_INSTALL/logs/CENGINE_APP.log &
+       echo $! > $CENGINE_APP_PID
+       echo "Contextual Engine Application running pid="`cat $CENGINE_APP_PID`
+       ;;
+
+ console)
+       echo "Starting Contextual Engine Application: "
+
+       if [ -f $CENGINE_APP_PID ]
+       then
+           echo "Already Running!!"
+           exit 1
+       fi
+
+       echo "STARTED Contextual Engine Application `date`"
+
+       cd $CENGINE_APP_INSTALL
+       eval `echo "$RUN_CMD $RUN_CLASS"`
+       ;;
+
+ stop)
+       PID=`cat $CENGINE_APP_PID 2>/dev/null`
+       echo "Shutting down Contextual Engine Application: $PID"
+       kill $PID 2>/dev/null
+       sleep 2
+       kill -9 $PID 2>/dev/null
+       rm -f $CENGINE_APP_PID
+       echo "STOPPED `date`"
+       ;;
+
+ restart)
+       $0 stop $*
+       sleep 5
+       $0 start $*
+       ;;
+
+ status)
+       if [ -f $CENGINE_APP_INSTALL/CENGINE_APP.pid ]
+       then
+           echo "Contextual Engine Application running pid="`cat $CENGINE_APP_INSTALL/CENGINE_APP.pid`
+           exit 0
+       else
+           echo "Contextual Engine Application is currently not running."
+       fi
+       exit 1
+       ;;
+
+*)
+       usage
+       ;;
+esac
+
+exit 0

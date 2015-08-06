@@ -1,0 +1,78 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8007
+    - type: https
+      port: 8107
+      keyStorePath: conf/_.adscreendirect.com.20170624.keystore
+      keyStorePassword: u~JLV2'Ve-8m~D3
+      keyStoreType: JKS
+      validateCerts: false
+      inputBufferSize: 128KiB
+  adminConnectors:
+    - type: http
+      port: 8207
+    - type: https
+      port: 8307
+      keyStorePath: conf/_.adscreendirect.com.20170624.keystore
+      keyStorePassword: u~JLV2'Ve-8m~D3
+      keyStoreType: JKS
+      validateCerts: false
+
+assets:
+  overrides:
+    /content: webapp/
+
+jdbcDriver: com.mysql.jdbc.Driver
+jdbcUrl: jdbc:mysql://central-biz:4001/f2_biz?autoReconnect=true&amp;rewriteBatchedStatements=true
+jdbcUser:
+jdbcPassword:
+jdbcMinIdle: 10
+jdbcMaxActive: 300
+jdbcInitialSize: 20
+jdbcMaxWait: 3000
+jdbcMaxOpenedPreparedStatements: 100
+jdbcTimeBetweenEvictionRunsMillis: 60000
+jdbcMinEvictableIdleTimeMillis: 3600000
+
+redisHost: localhost
+redisPort: 6381
+redisDb: 2
+redisTimeout: 3000
+
+readRedisHost: localhost
+readRedisPort: 6382
+readRedisDb: 2
+readRedisTimeout: 3000
+
+
+executorThreadPoolSize: 100
+processingScriptRootDir: lua/
+
+
+flushRedisAllowed: true
+defaultMaxAd: 5
+
+httpClientMaxTotalConnections: 200
+httpClientMaxConnectionsPerRoute: 10
+httpClientSoTimeout: 1000
+
+#Set this to true on, generally, only 1 instance which you should NOT server traffic to. This one instance will
+#update the Expanded Keywords index in Redis, which all instances should point to (at least for the readRedis settings).
+generateExpandedIndex: false
+
+#Minimum bid necessary for an Active Target to be loaded
+activeTargetBidFloor: 0.01
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+  # Logger-specific levels.
+  loggers:
+    # Sets the level for 'com.example.app' to DEBUG.
+    example: ERROR
+    org.hibernate.SQL: ERROR
+    org.hibernate: ERROR
+  appenders:
+    - type: console
